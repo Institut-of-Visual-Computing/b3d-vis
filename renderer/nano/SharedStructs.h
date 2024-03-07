@@ -3,6 +3,7 @@
 #include <owl/common/math/AffineSpace.h>
 #include <owl/common/math/box.h>
 #include <owl/common/math/vec.h>
+
 #include <SharedStructs.h>
 
 #include <optix_types.h>
@@ -23,6 +24,13 @@ namespace b3d
 				owl::vec3f dir_dv;
 			};
 
+			enum class SampleIntegrationMethod
+			{
+				transferIntegration,
+				maximumIntensityProjection,
+				averageIntensityProjection
+			};
+
 			struct LaunchParams
 			{
 				RayCameraData cameraData;
@@ -37,6 +45,8 @@ namespace b3d
 				cudaTextureObject_t colorMaps;
 				b3d::renderer::ColoringInfo coloringInfo;
 				cudaTextureObject_t transferFunctionTexture;
+				owl::vec2f sampleRemapping;
+				SampleIntegrationMethod sampleIntegrationMethod;
 			};
 
 			struct NanoVdbVolume
