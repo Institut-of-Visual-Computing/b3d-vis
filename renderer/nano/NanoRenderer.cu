@@ -131,6 +131,7 @@ OPTIX_RAYGEN_PROGRAM(rayGeneration)()
 	auto bgColor = (pattern & 1) ? bg1 : bg2;
 
 	//const auto a = prd.alpha;
+	/*
 	const auto a = tex2D<float>(optixLaunchParams.transferFunctionTexture, prd.alpha, .5f);
 	if (optixLaunchParams.bg.fillBox && !prd.isBackground)
 	{
@@ -146,8 +147,9 @@ OPTIX_RAYGEN_PROGRAM(rayGeneration)()
 	}
 
 	const auto color = prd.isBackground ? bgColor : vec4f(col * (1 - a) + a * vec3f(bgColor), 1.0f);
+	*/
 
-	const auto color = prd.isBackground ? bgColor : bgColor * (1 - prd.alpha) + prd.alpha * prd.color;
+	const auto color = prd.isBackground ? bgColor : bgColor * (1 - prd.alpha) + prd.alpha * vec4f(prd.color, 1.0);
 	surf2Dwrite(owl::make_rgba(color), optixLaunchParams.surfacePointer, sizeof(uint32_t) * pixelId.x, pixelId.y);
 }
 
