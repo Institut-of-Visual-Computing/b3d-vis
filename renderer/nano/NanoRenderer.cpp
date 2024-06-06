@@ -318,7 +318,6 @@ auto NanoRenderer::onRender() -> void
 
 	constexpr auto deviceId = 0; //TODO: Research on device id, in multi gpu system it might be tricky
 	const auto stream = owlParamsGetCudaStream(nanoContext_.launchParams, deviceId);
-	const auto record = gpuTimers_.record("basic owl rt", stream);
 
 	const auto view = renderData_->get<View>("view");
 	assert(view->cameras.size() > 0);
@@ -357,7 +356,8 @@ auto NanoRenderer::onRender() -> void
 		owl2f{ foveatedRenderingParams.leftEyeGazeScreenSpace.x, foveatedRenderingParams.leftEyeGazeScreenSpace.y },
 		owl2f{ foveatedRenderingParams.rightEyeGazeScreenSpace.x, foveatedRenderingParams.rightEyeGazeScreenSpace.y }
 	};
-	record.start();
+
+	
 	for (const auto cameraIndex : cameraIndices)
 	{
 		assert(cameraIndex < renderTargetFeatureParams.colorRT.surfaces.size());
@@ -375,20 +375,31 @@ auto NanoRenderer::onRender() -> void
 			owlRayGenSet2i(nanoContext_.rayGenFoveated, "frameBufferSize", lrSize);
 			owlParamsSetRaw(nanoContext_.launchParams, "surfacePointer", &lpResource.surface.surface);
 			owlBuildSBT(nanoContext_.context);
-			owlAsyncLaunch2D(nanoContext_.rayGenFoveated, lrSize.x, lrSize.y, nanoContext_.launchParams);
 
+			
+			const auto rtRecord = gpuTimers_.record("camera {}: foveated RT", stream);
+			const auto resolveRecord = gpuTimers_.record("camera {}: foveated resolve", stream);
+
+			rtRecord.start();
+			owlAsyncLaunch2D(nanoContext_.rayGenFoveated, lrSize.x, lrSize.y, nanoContext_.launchParams);
+			rtRecord.stop();
+
+			resolveRecord.start();
 			foveatedFeature_->resolve(renderTargetFeatureParams.colorRT.surfaces[cameraIndex], framebufferSize.x, framebufferSize.y, stream, foveatedGaze[cameraIndex].x, foveatedGaze[cameraIndex].y);
+			resolveRecord.stop();
 		}
 		else
 		{
+			const auto rtRecord = gpuTimers_.record("camera {}: RT pass", stream);
 			//TODO: pass enable foveated flag to the kernel!
 			owlParamsSetRaw(nanoContext_.launchParams, "surfacePointer", &renderTargetFeatureParams.colorRT.surfaces[cameraIndex].surface);
 			owlRayGenSet2i(nanoContext_.rayGen, "frameBufferSize", framebufferSize);
 			owlBuildSBT(nanoContext_.context);
+			rtRecord.start();
 			owlAsyncLaunch2D(nanoContext_.rayGen, framebufferSize.x, framebufferSize.y, nanoContext_.launchParams);
+			rtRecord.stop();
 		}
 	}
-	record.stop();
 }
 
 auto NanoRenderer::onInitialize() -> void
@@ -467,31 +478,11 @@ auto NanoRenderer::onGui() -> void
 	ImGui::DragFloatRange2("Sample Remapping", &guiData.sampleRemapping[0], &guiData.sampleRemapping[1], 0.0001, -1.0f,
 						   1.0f, "%.4f");
 
+	ImGui::SeparatorText("Misc");
+
 	if (ImGui::Button("Reset Model Transform"))
 	{
 		volumeTransform->worldMatTRS = AffineSpace3f{};
-	}
-	ImGui::SeparatorText("Data File (.b3d)");
-	ImGui::InputText("##source", const_cast<char*>(b3dFilePath.string().c_str()), b3dFilePath.string().size(),
-					 ImGuiInputTextFlags_ReadOnly);
-	ImGui::SameLine();
-	if (ImGui::Button("Select"))
-	{
-		// ImGui::OpenPopup("FileSelectDialog");
-	}
-	ImGui::SameLine();
-	if (ImGui::Button("Load"))
-	{
-		if (std::filesystem::exists(b3dFilePath))
-		{
-			const auto t = cutterParser::load(b3dFilePath.generic_string());
-
-			const auto nanoFile = t.clusters.front().accelerationStructureRoot.nanoVdbFile;
-		}
-		else
-		{
-			ImGui::TextColored(ImVec4{ 0.9f, 0.1f, 0.1f, 1.0f }, "Error: Can't load file!");
-		}
 	}
 
 	ImGui::Checkbox("Fill Box", &guiData.fillBox);
@@ -500,39 +491,14 @@ auto NanoRenderer::onGui() -> void
 	{
 		ImGui::ColorEdit3("Fill Color", guiData.fillColor.data());
 	}
-
-	ImGui::SeparatorText("Timings");
-
-	const auto timing = gpuTimers_.get("basic owl rt");
-
-	static float values[100] = {};
-	static auto valuesOffset = 0;
-
-	values[valuesOffset] = timing;
-	valuesOffset = (valuesOffset + 1) % IM_ARRAYSIZE(values);
-
-	{
-		auto average = 0.0f;
-		for (auto n = 0; n < IM_ARRAYSIZE(values); n++)
-		{
-			average += values[n];
-		}
-		average /= static_cast<float>(IM_ARRAYSIZE(values));
-		ImGui::SetNextItemWidth(-1);
-		ImGui::PlotHistogram("##perfGraph", values, IM_ARRAYSIZE(values), valuesOffset,
-							 std::format("avg {:3.2f} ms", average).c_str(), 0.0f, 16.0f, ImVec2(0, 200.0f));
-	}
-
-	ImGui::Text("%1.3f", timing);
-
-	
+	debugInfo_.gizmoHelper->drawGizmo(volumeTransform->worldMatTRS);
+	debugInfo_.gizmoHelper->drawGizmo(volumeTransform->worldMatTRS);
 
 	static auto currentPath = std::filesystem::current_path();
 	static auto selectedPath = std::filesystem::path{};
 
 	const auto center = ImGui::GetMainViewport()->GetCenter();
 	ImGui::SetNextWindowPos(center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
-	openFileDialog_.gui();
 	/*if (ImGui::BeginPopupModal("FileSelectDialog", nullptr, ImGuiWindowFlags_AlwaysAutoResize))
 	{
 		constexpr auto roots = std::array{ "A:/", "B:/", "C:/", "D:/", "E:/", "F:/", "G:/", "H:/", "I:/" };
@@ -597,5 +563,6 @@ auto NanoRenderer::onGui() -> void
 		ImGui::EndPopup();
 	}
 	*/
+	
 	ImGui::End();
 }

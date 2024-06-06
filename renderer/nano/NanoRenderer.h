@@ -4,7 +4,6 @@
 #include "nanovdb/util/CreateNanoGrid.h"
 #include "owl/owl_host.h"
 
-#include <CudaGpuTimers.h>
 
 #include "RuntimeDataSet.h"
 #include <FoveatedRendering.h>
@@ -69,7 +68,7 @@ namespace b3d::renderer
 
 		nanovdb::Map currentMap_{};
 
-		CudaGpuTimers<100, 4> gpuTimers_{};
+		
 
 		RenderTargetFeature* renderTargetFeature_;
 		// RenderSyncFeature* renderSyncFeature_;
