@@ -274,7 +274,6 @@ OPTIX_CLOSEST_HIT_PROGRAM(nano_closestHit)()
 			value / (optixLaunchParams.sampleRemapping.y - optixLaunchParams.sampleRemapping.x);
 	};
 
-	const auto steps = 10.0f * prd.stepsScale;
 	const auto integrate = [&](auto sampleAccumulator)
 	{
 		sampleAccumulator.preAccumulate();
@@ -286,7 +285,10 @@ OPTIX_CLOSEST_HIT_PROGRAM(nano_closestHit)()
 			// TODO: can we remove step and update? Investigate examples in optix sdk
 			const auto tt = hdda.next();
 			ijk = hdda.voxel();
-			const auto value = remapSample(accessor.getValue(nanovdb::Coord::Floor(ray(tt))));
+			//TODO: Sometimes there are visible intersection errors, adding epsilon seams to work, investigate if there are any smarter approaches. In owl/common/math/constants.h seems to have epsilon query, but it is still under todo mark for the device. I have tried with FLT_EPSILON, and it is not enough, it seems that the ray offset should be adaptive (increase at near, decrease at far)!! INVESTIGATE ON THIS. Other possible solution could be to use double precision for ray traversal
+			
+			constexpr auto eps = 1e-4f;//FLT_EPSILON (requires float.h)
+			const auto value = remapSample(accessor.getValue(nanovdb::Coord::Floor(ray(tt + eps))));
 			sampleAccumulator.accumulate(value);
 			hdda.update(ray, accessor.getDim(ijk, ray));
 		}
