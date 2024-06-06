@@ -1,3 +1,6 @@
 [submodule "thirdParty/owl"]
 	path = thirdParty/owl
 	url = https://github.com/owl-project/owl.git
+[submodule "thirdParty/ImGuiUtils"]
+	path = thirdParty/ImGuiUtils
+	url = https://github.com/Raikiri/LegitProfiler.git
