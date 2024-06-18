@@ -43,7 +43,7 @@ private:
 	std::shared_ptr<DebugDrawList> debugDrawList_{};
 	std::shared_ptr<GizmoHelper> gizmoHelper_{};
 
-	ImGuiUtils::ProfilersWindow profilersWindow_{};
+	ProfilersWindow profilersWindow_{};
 
 	std::shared_ptr<b3d::renderer::RendererBase> currentRenderer_{ nullptr };
 	std::int32_t selectedRendererIndex_{ -1 };

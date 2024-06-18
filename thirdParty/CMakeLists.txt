@@ -11,4 +11,14 @@ add_subdirectory(imSpinner)
 set_property(TARGET owl PROPERTY FOLDER "ThirdParty/owl")
 set_property(TARGET owl_viewer PROPERTY FOLDER "ThirdParty/owl")
 
+add_library(ImGuiUtils INTERFACE)
+
+target_include_directories(ImGuiUtils
+    INTERFACE
+        "ImGuiUtils"
+)   
+
+add_library(B3D::ImGuiUtils ALIAS ImGuiUtils)
+
+
 add_subdirectory(iconFontCppHeaders)
