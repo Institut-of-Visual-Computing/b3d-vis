@@ -202,7 +202,34 @@ namespace
 
 	ViewerSettings viewerSettings{};
 
+
+	[[nodiscard]] auto isWindowVisible(GLFWwindow* window) -> bool
+	{
+		int width, height;
+		glfwGetWindowSize(window, &width, &height);
+		return width > 0 || height > 0;
+	}
 } // namespace
+
+
+auto NanoViewer::drawFeaturesGui() -> void
+{
+
+	ImGui::Begin("Features");
+
+	/*for (const auto& feature : renderFeatures_)
+	{
+		if (feature->hasGui())
+		{
+			if (ImGui::CollapsingHeader(feature->featureName().c_str()))
+			{
+				feature->gui();
+			}
+		}
+	}*/
+
+	ImGui::End();
+}
 
 auto NanoViewer::gui() -> void
 {
@@ -350,8 +377,11 @@ auto NanoViewer::gui() -> void
 
 	ImGui::End();
 
-	profilersWindow_.gpuGraph.maxFrameTime =
-		1.0f / 60.0f; // profilersWindow_.gpuGraph.maxFrameTime * 0.998f + 0.002f* 1.0f/ImGui::GetIO().Framerate;
+	const auto currentFrameTime = 1.0f / ImGui::GetIO().Framerate;
+	const float maxFrameTimeTarget = currentFrameTime > (1.0f / 60.0f) ? 1.0f / 30.0f : 1.0f / 60.0f;
+
+	profilersWindow_.gpuGraph.maxFrameTime = maxFrameTimeTarget;
+
 	static int profiledPasses = 0;
 	if (!profilersWindow_.stopProfiling)
 	{
@@ -752,6 +782,8 @@ NanoViewer::NanoViewer(const std::string& title, const int initWindowWidth, cons
 	{
 		registeredRendererNames_.push_back(b3d::renderer::registry[i].name);
 	}
+
+	profilersWindow_.gpuGraph.maxFrameTime = 1.0f / 60.0f;
 }
 
 auto NanoViewer::showAndRunWithGui() -> void
@@ -918,75 +950,80 @@ auto NanoViewer::showAndRunWithGui(const std::function<bool()>& keepgoing) -> vo
 	while (!glfwWindowShouldClose(handle) && keepgoing())
 	{
 		{
+
 			ZoneScoped;
 
-			// TODO: if windows minimized or not visible -> skip rendering
-			onFrameBegin();
-			glClear(GL_COLOR_BUFFER_BIT);
-			static double lastCameraUpdate = -1.f;
-			if (camera.lastModified != lastCameraUpdate)
+			if (isWindowVisible(handle))
 			{
-				cameraChanged();
-				lastCameraUpdate = camera.lastModified;
+
+				onFrameBegin();
+				glClear(GL_COLOR_BUFFER_BIT);
+				static double lastCameraUpdate = -1.f;
+				if (camera.lastModified != lastCameraUpdate)
+				{
+					cameraChanged();
+					lastCameraUpdate = camera.lastModified;
+				}
+				gizmoHelper_->clear();
+
+				ImGui_ImplOpenGL3_NewFrame();
+				ImGui_ImplGlfw_NewFrame();
+				ImGui::NewFrame();
+				ImGui::PushFont(defaultFonts[currentFontIndex]);
+				gui();
+
+				const auto cameraMatrices = computeViewProjectionMatrixFromCamera(camera, fbSize.x, fbSize.y);
+
+				if (viewerSettings.enableDebugDraw)
+				{
+					drawGizmos(cameraMatrices);
+				}
+
+				ImGui::PopFont();
+				ImGui::EndFrame();
+
+				render();
+
+
+				auto& gpuTimers = currentRenderer_->getGpuTimers();
+
+				auto r1 = gpuTimers.record("CudaFbMapping", 0);
+
+				fsPass->setViewport(fbSize.x, fbSize.y);
+				fsPass->setSourceTexture(fbTexture);
+
+				r1.start();
+				fsPass->execute();
+				r1.stop();
+
+				auto r2 = gpuTimers.record("Debug Overlay", 0);
+				r2.start();
+				if (viewerSettings.enableGridFloor)
+				{
+					igPass->setViewProjectionMatrix(cameraMatrices.viewProjection);
+					igPass->setViewport(fbSize.x, fbSize.y);
+					igPass->setGridColor(glm::vec3{ viewerSettings.gridColor[0], viewerSettings.gridColor[1],
+													viewerSettings.gridColor[2] });
+					igPass->execute();
+				}
+
+				if (viewerSettings.enableDebugDraw)
+				{
+					ddPass->setViewProjectionMatrix(cameraMatrices.viewProjection);
+					ddPass->setViewport(fbSize.x, fbSize.y);
+					ddPass->setLineWidth(viewerSettings.lineWidth);
+					ddPass->execute();
+				}
+				r2.stop();
+				ImGui::Render();
+
+				auto r3 = gpuTimers.record("GUI", 0);
+				r3.start();
+				ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+				r3.stop();
+				glfwSwapBuffers(handle);
 			}
-			gizmoHelper_->clear();
 
-			ImGui_ImplOpenGL3_NewFrame();
-			ImGui_ImplGlfw_NewFrame();
-			ImGui::NewFrame();
-			ImGui::PushFont(defaultFonts[currentFontIndex]);
-			gui();
-
-			const auto cameraMatrices = computeViewProjectionMatrixFromCamera(camera, fbSize.x, fbSize.y);
-
-			if (viewerSettings.enableDebugDraw)
-			{
-				drawGizmos(cameraMatrices);
-			}
-
-			ImGui::PopFont();
-			ImGui::EndFrame();
-
-			render();
-
-
-			auto& gpuTimers = currentRenderer_->getGpuTimers();
-
-			auto r1 = gpuTimers.record("CudaFbMapping", 0);
-
-			fsPass->setViewport(fbSize.x, fbSize.y);
-			fsPass->setSourceTexture(fbTexture);
-
-			r1.start();
-			fsPass->execute();
-			r1.stop();
-
-			auto r2 = gpuTimers.record("Debug Overlay", 0);
-			r2.start();
-			if (viewerSettings.enableGridFloor)
-			{
-				igPass->setViewProjectionMatrix(cameraMatrices.viewProjection);
-				igPass->setViewport(fbSize.x, fbSize.y);
-				igPass->setGridColor(
-					glm::vec3{ viewerSettings.gridColor[0], viewerSettings.gridColor[1], viewerSettings.gridColor[2] });
-				igPass->execute();
-			}
-
-			if (viewerSettings.enableDebugDraw)
-			{
-				ddPass->setViewProjectionMatrix(cameraMatrices.viewProjection);
-				ddPass->setViewport(fbSize.x, fbSize.y);
-				ddPass->setLineWidth(viewerSettings.lineWidth);
-				ddPass->execute();
-			}
-			r2.stop();
-			ImGui::Render();
-
-			auto r3 = gpuTimers.record("GUI", 0);
-			r3.start();
-			ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
-			r3.stop();
-			glfwSwapBuffers(handle);
 			glfwPollEvents();
 			FrameMark;
 		}

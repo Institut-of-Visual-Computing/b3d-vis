@@ -43,6 +43,7 @@ target_link_libraries(viewer
 	B3D::Renderer::Nano
 	B3D::Renderer::FastVoxelTraversal
 	B3D::Renderer::NanoOutOfCore
+	B3D::ImGuiUtils
 	OpenGL::GL
 	glad::glad
 	Vulkan::Vulkan
