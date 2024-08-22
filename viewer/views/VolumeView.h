@@ -14,7 +14,6 @@
 #include <cuda_runtime.h>
 #include <memory>
 
-
 class GizmoHelper;
 
 class FullscreenTexturePass;
@@ -55,7 +54,7 @@ private:
 	auto initializeGraphicsResources() -> void;
 	auto deinitializeGraphicsResources() -> void;
 
-	auto renderVolume() const -> void;
+	auto renderVolume() -> void;
 
 	auto demoMode(const bool enable) -> void;
 
@@ -64,6 +63,7 @@ private:
 
 	Camera camera_{};
 	Camera cameraLastFrame_{};
+
 
 	animation::PropertyAnimator animator_;
 	bool demoModeEnabled_{ false };

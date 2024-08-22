@@ -51,6 +51,7 @@ target_sources(${viewerTargetName} PRIVATE
 	GuiDefaultLayoutSettings.h
 	GuiDefaultLayoutSettings.cpp
 	Animation.h
+	GLGpuTimers.h
 	framework/Dockspace.h
 	framework/Dockspace.cpp
 	framework/DockableWindowViewBase.h

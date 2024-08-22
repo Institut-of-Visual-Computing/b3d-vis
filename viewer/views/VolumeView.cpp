@@ -20,6 +20,7 @@
 #include <RendererBase.h>
 
 #include "GLUtils.h"
+#include "GLGpuTimers.h"
 #include "GizmoHelper.h"
 #include "InteropUtils.h"
 #include "framework/ApplicationContext.h"
@@ -598,7 +599,7 @@ auto VolumeView::deinitializeGraphicsResources() -> void
 {
 }
 
-auto VolumeView::renderVolume() const -> void
+auto VolumeView::renderVolume() -> void
 {
 
 	const auto width = viewportSize_.x;
@@ -612,7 +613,6 @@ auto VolumeView::renderVolume() const -> void
 
 	if (renderingData_ && renderer_ && graphicsResources_.cuFramebufferTexture)
 	{
-
 
 		const auto cam = b3d::renderer::Camera{ .origin = owl_cast(camera_.getFrom()),
 												.at = owl_cast(camera_.getAt()),
@@ -637,10 +637,12 @@ auto VolumeView::renderVolume() const -> void
 		renderer_->render();
 	}
 
+	const auto& r1 = applicationContext_->getGlGpuTimers().record("Fullscreen Quad Pass");
+	r1.start();
 	fullscreenTexturePass_->setViewport(width, height);
 	fullscreenTexturePass_->setSourceTexture(graphicsResources_.framebufferTexture);
 	fullscreenTexturePass_->execute();
-
+	r1.stop();
 
 	if (viewerSettings_.enableGridFloor)
 	{

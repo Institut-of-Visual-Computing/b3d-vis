@@ -9,8 +9,9 @@
 #include "DebugDrawList.h"
 #include "GizmoHelper.h"
 
-#include "Vulkan.h"
 #include "../thirdParty/ImGuiUtils/ImGuiProfilerRenderer.h"
+#include <ProfilersWindow.h>
+#include "GLGpuTimers.h"
 
 
 class NanoViewer final
@@ -44,6 +45,7 @@ private:
 	std::shared_ptr<GizmoHelper> gizmoHelper_{};
 
 	ProfilersWindow profilersWindow_{};
+	
 
 	std::shared_ptr<b3d::renderer::RendererBase> currentRenderer_{ nullptr };
 	std::int32_t selectedRendererIndex_{ -1 };

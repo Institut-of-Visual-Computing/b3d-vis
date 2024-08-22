@@ -1,7 +1,6 @@
 find_package(glfw3 CONFIG REQUIRED)
 set(owl_dir ${CMAKE_CURRENT_LIST_DIR}/owl)
 add_subdirectory(${owl_dir} EXCLUDE_FROM_ALL)
-add_subdirectory(${owl_dir}/samples/common)
 # add_subdirectory(${owl_dir}/samples/common)
 
 add_subdirectory(imGuizmo)
