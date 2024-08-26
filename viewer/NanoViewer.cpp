@@ -32,15 +32,6 @@
 
 #include "GizmoOperationFlags.h"
 
-#include "features/projectExplorer/ProjectExplorer.h"
-#include "features/serverConnect/ServerConnectSettingsView.h"
-#include "features/transferMapping/TransferMapping.h"
-#include "framework/ApplicationContext.h"
-#include "framework/MenuBar.h"
-#include "views/VolumeView.h"
-
-#include <imspinner.h>
-
 using namespace owl;
 
 namespace
@@ -493,14 +484,17 @@ auto NanoViewer::draw() -> void
 
 
 		{
-
-
+			GL_CALL(glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, 512, 1, 0, GL_RGBA, GL_FLOAT, nullptr));
+			renderingData_.data.colorMapTexture.extent =
+				b3d::renderer::Extent{ 512, 1, 1 };
+		}
+			colormaptexturename.c_str()));
 			const auto& gpuTimers = currentRenderer_->getGpuTimers();
+			cudaGraphicsGLRegisterImage(&colorMapResources_.cudaGraphicsResource, colorMapResources_.colormapTexture, GL_TEXTURE_2D, cudaGraphicsRegisterFlagsTextureGather);
 
 			const auto currentTimings = gpuTimers.getAllCurrent();
 
 			const auto profiledPasses = currentTimings.size();
-
 
 			for (const auto& timing : currentTimings)
 			{
@@ -516,16 +510,17 @@ auto NanoViewer::draw() -> void
 				lastEndTime = glm::max(lastEndTime, profilerTask.endTime);
 			}
 		}
-
+	}
 		{
 
 
 			const auto& gpuTimers = applicationContext->getGlGpuTimers();
+		std::array<float, 512> initBufferData;
 
 			const auto currentTimings = gpuTimers.getAllCurrent();
-
 			const auto profiledPasses = currentTimings.size();
-
+			transferFunctionBufferName.length() + 1, transferFunctionBufferName.c_str()));
+			transferFunctionResources_.transferFunctionTexture, GL_TEXTURE_2D, cudaGraphicsRegisterFlagsTextureGather | cudaGraphicsRegisterFlagsWriteDiscard);
 
 			for (const auto& timing : currentTimings)
 			{
@@ -560,21 +555,19 @@ auto NanoViewer::draw() -> void
 	ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 	r3.stop();
 	if (ImGui::GetIO().ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
-	{
-		const auto backupCurrentContext = glfwGetCurrentContext();
-		ImGui::UpdatePlatformWindows();
-		ImGui::RenderPlatformWindowsDefault();
-		glfwMakeContextCurrent(backupCurrentContext);
+		registeredRendererNames_.push_back(b3d::renderer::registry[i].name);
 	}
+}
+}
 
 	glfwSwapBuffers(applicationContext->mainWindowHandle_);
 	glfwPollEvents();
 	FrameMark;
 }
-
 auto NanoViewer::showAndRunWithGui(const std::function<bool()>& keepgoing) -> void
 {
-
+			mat[6] = transform->l.vy.z;
+				currentGizmoMode, mat, nullptr, nullptr);
 
 	int width, height;
 	glfwGetFramebufferSize(applicationContext->mainWindowHandle_, &width, &height);
@@ -604,8 +597,7 @@ auto NanoViewer::showAndRunWithGui(const std::function<bool()>& keepgoing) -> vo
 	projectExplorer = std::make_unique<ProjectExplorer>(*applicationContext);
 
 	mainMenu = std::make_unique<MenuBar>(*applicationContext);
-
-
+			const auto bounds = std::array{ halfSize.x, halfSize.y, halfSize.z, -halfSize.x,-halfSize.y,-halfSize.z };
 	// TODO: Move this to server connection feature
 	static auto isServerConnected = false;
 
@@ -613,6 +605,7 @@ auto NanoViewer::showAndRunWithGui(const std::function<bool()>& keepgoing) -> vo
 	{
 		registeredRendererNames_.push_back(b3d::renderer::registry[i].name);
 	}
+			}
 
 	profilersWindow_.gpuGraph.maxFrameTime = 1.0f / 60.0f;
 
@@ -627,7 +620,6 @@ auto NanoViewer::showAndRunWithGui(const std::function<bool()>& keepgoing) -> vo
 				isServerConnected = !isServerConnected;
 			}
 			ImGui::PopStyleColor();
-
 			if (ImGui::IsItemHovered())
 			{
 				if (ImGui::BeginTooltip())
@@ -636,6 +628,7 @@ auto NanoViewer::showAndRunWithGui(const std::function<bool()>& keepgoing) -> vo
 					ImGui::EndTooltip();
 				}
 			}
+		glm::normalize(glm::vec3{ camera.getUp().x, camera.getUp().y, camera.getUp().z }));
 
 
 			const auto sampleRequest = std::vector<std::string>{
@@ -674,7 +667,6 @@ auto NanoViewer::showAndRunWithGui(const std::function<bool()>& keepgoing) -> vo
 				}
 			}
 
-
 			ImGui::SameLine();
 			ImGui::SetNextItemAllowOverlap();
 			const auto pos = ImGui::GetCursorPos();
@@ -704,7 +696,7 @@ auto NanoViewer::showAndRunWithGui(const std::function<bool()>& keepgoing) -> vo
 					ImGui::EndTooltip();
 				}
 			}
-
+			ZoneScoped;
 			if (hasPendingRequests)
 			{
 				ImGui::SetCursorPos(pos + ImGui::GetStyle().FramePadding * 2);
@@ -718,21 +710,21 @@ auto NanoViewer::showAndRunWithGui(const std::function<bool()>& keepgoing) -> vo
 			}
 		});
 
-
+			gizmoHelper_->clear();
 	applicationContext->addMenuAction([&]() { isRunning_ = false; }, "Program", "Quit", "Alt+F4", std::nullopt, 100);
-
+			gui();
 	glfwMakeContextCurrent(applicationContext->mainWindowHandle_);
-
+			const auto cameraMatrices = computeViewProjectionMatrixFromCamera(camera, fbSize.x, fbSize.y);
 	while (!glfwWindowShouldClose(applicationContext->mainWindowHandle_) && keepgoing())
 	{
 		{
 			draw();
 
-
+			}
 			/*auto& gpuTimers = currentRenderer_->getGpuTimers();
-
+			ImGui::EndFrame();
 			auto r1 = gpuTimers.record("CudaFbMapping", 0);
-
+			render();
 			fsPass->setViewport(fbSize.x, fbSize.y);
 			fsPass->setSourceTexture(fbTexture);
 
@@ -750,7 +742,7 @@ auto NanoViewer::showAndRunWithGui(const std::function<bool()>& keepgoing) -> vo
 												viewerSettings.gridColor[2] });
 				igPass->execute();
 			}
-
+			}
 			if (viewerSettings.enableDebugDraw)
 			{
 				ddPass->setViewProjectionMatrix(cameraMatrices.viewProjection);
@@ -760,16 +752,17 @@ auto NanoViewer::showAndRunWithGui(const std::function<bool()>& keepgoing) -> vo
 			}
 			r2.stop();
 			ImGui::Render();
-
+			}
 			auto r3 = gpuTimers.record("GUI", 0);
 			r3.start();
 			ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 			r3.stop();
 			glfwSwapBuffers(handle);*/
 		}
-
+			ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 		glfwPollEvents();
 		FrameMark;
+	}
 	}
 
 	deinitializeGui();
@@ -803,6 +796,6 @@ auto NanoViewer::selectRenderer(const std::uint32_t index) -> void
 	currentRenderer_ = b3d::renderer::registry[selectedRendererIndex_].rendererInstance;
 
 	const auto debugInfo = b3d::renderer::DebugInitializationInfo{ debugDrawList_, gizmoHelper_ };
-
 	currentRenderer_->initialize(&renderingData.buffer, debugInfo);
+
 }
