@@ -407,7 +407,7 @@ return 0.5 * (1 - (f * f * f - f * sin(f * pi))) + 0.5;
 
 namespace ImGui
 {
-	
+
 
 	// [src] http://iquilezles.org/www/articles/minispline/minispline.htm
 	// key format (for dim == 1) is (t0,x0,t1,x1 ...)
@@ -455,18 +455,10 @@ namespace ImGui
 		if (p < 0)
 			return points[0].y;
 
-		float* input = new float[maxpoints * 2];
 		float output[4];
 
-		for (int i = 0; i < maxpoints; ++i)
-		{
-			input[i * 2 + 0] = points[i].x;
-			input[i * 2 + 1] = points[i].y;
-		}
+		spline<1>(reinterpret_cast<const float*>(points), maxpoints, p, output);
 
-		spline<1>(input, maxpoints, p, output);
-
-		delete[] input;
 		return output[0];
 	}
 
@@ -502,7 +494,7 @@ namespace ImGui
 	}
 
 	int Curve(const char* label, const ImVec2& size, const int maxpoints, ImVec2* points, int* selection,
-					 const ImVec2& rangeMin, const ImVec2& rangeMax)
+			  const ImVec2& rangeMin, const ImVec2& rangeMax)
 	{
 		int modified = 0;
 		int i;
@@ -845,7 +837,6 @@ namespace ImGui
 							points[i] = ImRemap(ImVec2(px, py), ImVec2(0, 0), ImVec2(1, 1), rangeMin, rangeMax);
 						}
 						modified = 1;
-
 					}
 				}
 				ImGui::PopID();

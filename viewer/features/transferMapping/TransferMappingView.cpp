@@ -6,6 +6,7 @@
 
 #include <imgui_internal.h>
 #include "imgui.h"
+#include "implot.h"
 
 TransferMappingView::TransferMappingView(ApplicationContext& appContext, Dockspace* dockspace)
 	: DockableWindowViewBase{ appContext, "Transfer Mapping", dockspace, WindowFlagBits::none }
@@ -96,7 +97,145 @@ auto TransferMappingView::onDraw() -> void
 		}
 	}
 
+	static auto bar_data = std::array{ 100, 80, 20, 34, 26, 53, 436, 13, 47, 94 };
+	/*float x_data[1000] = ...;
+	float y_data[1000] = ...;*/
 
+	struct PointHandle
+	{
+		ImPlotPoint point;
+		ImVec2 controlOffset; // those offsets are symmetrical to point
+	};
+	static auto selectedPointIndex = -1;
+	static auto pointHandles =
+		std::vector<PointHandle>{ { ImPlotPoint{ 0, 0 }, ImVec2{ 1, 0 } }, { ImPlotPoint{ 1, 80 }, ImVec2{ 1, 0 } } };
+	if (ImPlot::BeginPlot("My Plot", ImVec2(-1, 0), ImPlotFlags_NoLegend | ImPlotFlags_NoMenus))
+	{
+		ImPlot::SetupAxis(ImAxis_X1, "intensity", ImPlotAxisFlags_RangeFit);
+		ImPlot::SetupAxis(ImAxis_Y1, "num", ImPlotAxisFlags_RangeFit);
+		ImPlot::SetupFinish();
+
+		ImPlot::PlotBars("My Bar Plot", bar_data.data(), bar_data.size());
+
+		auto anyPointIsDragging = false;
+
+		static auto evaluatedCurveValues = std::array<ImPlotPoint, 100>{};
+		const auto segmentsPerSpline = evaluatedCurveValues.size() / (pointHandles.size() - 1);
+
+		for (auto splineSegment = 0; splineSegment < pointHandles.size() - 1; splineSegment++)
+		{
+			for (auto i = 0; i < segmentsPerSpline; i++)
+			{
+				const auto t = i / (double)segmentsPerSpline;
+				const auto u = 1 - t;
+				const auto w1 = u * u * u;
+				const auto w2 = 3 * u * u * t;
+				const auto w3 = 3 * u * t * t;
+				const auto w4 = t * t * t;
+				evaluatedCurveValues[splineSegment * segmentsPerSpline + i] = ImPlotPoint(
+					w1 * pointHandles[splineSegment].point.x +
+						w2 * (pointHandles[splineSegment].point.x + pointHandles[splineSegment].controlOffset.x) +
+						w3 *
+							(pointHandles[splineSegment + 1].point.x -
+							 pointHandles[splineSegment + 1].controlOffset.x) +
+						w4 * pointHandles[splineSegment + 1].point.x,
+					w1 * pointHandles[splineSegment].point.y +
+						w2 * (pointHandles[splineSegment].point.y + pointHandles[splineSegment].controlOffset.y) +
+						w3 *
+							(pointHandles[splineSegment + 1].point.y -
+							 pointHandles[splineSegment + 1].controlOffset.y) +
+						w4 * pointHandles[splineSegment + 1].point.y);
+			}
+		}
+
+		ImPlot::PlotLine("##bez", &evaluatedCurveValues[0].x, &evaluatedCurveValues[0].y, evaluatedCurveValues.size(),
+						 0, 0, sizeof(ImPlotPoint));
+
+		for (auto i = 0; i < pointHandles.size(); i++)
+		{
+			const auto isFirst = i == 0;
+			const auto isLast = i == pointHandles.size() - 1;
+			auto& pointHandle = pointHandles[i];
+			const auto isClicked = ImGui::IsItemClicked(ImGuiMouseButton_Left);
+
+			const auto isDragging = ImPlot::DragPoint(
+				i, &pointHandle.point.x, &pointHandle.point.y,
+				selectedPointIndex == i ? ImVec4{ 0, 1, 0, 1 } : ImVec4{ 1, 0, 0, 1 }, 5, ImPlotDragToolFlags_None);
+			if (isFirst)
+			{
+				// apply position constrains
+				pointHandle.point.y = 0;
+			}
+			anyPointIsDragging |= isDragging;
+			if (isDragging or isClicked)
+			{
+				selectedPointIndex = i;
+			}
+
+			if (selectedPointIndex == i)
+			{
+				ImGui::PushID("handler_control");
+				// draw handles
+
+
+				auto lineSegment = std::array<ImPlotPoint, 2>{};
+				if (isFirst)
+				{
+					// apply position constrains
+					pointHandle.point.y = 0;
+					lineSegment[0] = pointHandle.point;
+					lineSegment[1] = ImPlotPoint{ pointHandle.point.x + pointHandle.controlOffset.x,
+												  pointHandle.point.y + pointHandle.controlOffset.y };
+				}
+				else
+				{
+					lineSegment[0] = ImPlotPoint{ pointHandle.point.x - pointHandle.controlOffset.x,
+												  pointHandle.point.y - pointHandle.controlOffset.y };
+					lineSegment[1] = ImPlotPoint{ pointHandle.point.x + pointHandle.controlOffset.x,
+												  pointHandle.point.y + pointHandle.controlOffset.y };
+
+
+					const auto isLeftDrag =
+						ImPlot::DragPoint(i, &lineSegment[0].x, &lineSegment[0].y, ImVec4{ 0, 0, 1, 1 }, 5,
+										  ImPlotDragToolFlags_None | ImPlotDragToolFlags_Delayed);
+
+					if (isLeftDrag)
+					{
+						if (lineSegment[0].x > pointHandle.point.x)
+						{
+							lineSegment[0].x = pointHandle.point.x;
+						}
+						pointHandle.controlOffset = ImVec2{ (float)(pointHandle.point.x - lineSegment[0].x),
+															(float)(pointHandle.point.y - lineSegment[0].y) };
+					}
+				}
+				ImPlot::PlotLine("##h1", &lineSegment[0].x, &lineSegment[0].y, 2, 0, 0, sizeof(ImPlotPoint));
+				ImGui::PopID();
+			}
+		}
+
+		/*if (not anyPointIsDragging)
+		{
+			selectedPointIndex = -1;
+		}*/
+		if (ImPlot::IsPlotHovered())
+		{
+			/*ImPlot::PushPlotClipRect();
+			auto& DrawList = *ImPlot::GetPlotDrawList();
+
+			const auto pos = ImPlot::PlotToPixels(*x, *y, IMPLOT_AUTO, IMPLOT_AUTO);
+			DrawList.AddCircleFilled(pos, radius, col32);
+			ImPlot::PopPlotClipRect();*/
+		}
+		if (ImPlot::IsPlotHovered() and ImGui::IsMouseClicked(ImGuiMouseButton_Left))
+		{
+			const auto newPoint = ImPlot::GetPlotMousePos();
+			pointHandles.push_back(PointHandle{ newPoint, ImVec2{ 1, 0 } });
+		}
+
+		// ImPlot::PlotLine("My Line Plot", x_data, y_data, 1000);
+		ImPlot::EndPlot();
+	}
 
 	// TODO:: Curve crashes sometimes in release
 	if (ImGui::Curve("##transferFunction", size, dataPoints_.size(), dataPoints_.data(), &selectedCurveHandleIdx_))

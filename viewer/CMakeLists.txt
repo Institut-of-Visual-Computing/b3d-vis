@@ -6,6 +6,7 @@ find_package(glad CONFIG REQUIRED)
 find_package(glm CONFIG REQUIRED)
 find_package(nlohmann_json CONFIG REQUIRED)
 find_package(OpenVDB CONFIG REQUIRED COMPONENTS nanovdb)
+find_package(implot CONFIG REQUIRED)
 
 set(viewerTargetName viewer)
 add_executable(${viewerTargetName})
@@ -130,6 +131,7 @@ target_link_libraries(${viewerTargetName}
 	nlohmann_json::nlohmann_json
 	legit
 	B3D::Header::Sofia
+	implot::implot
 )
 
 target_compile_definitions(${viewerTargetName} PUBLIC B3D_USE_NLOHMANN_JSON)

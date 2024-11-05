@@ -25,12 +25,12 @@ namespace b3d::renderer::nano
 		auto getVolumeState(const std::string& uuid) -> std::optional<RuntimeVolumeState>;
 		auto getSelectedData() -> RuntimeVolume;
 
-		auto addNanoVdb(const std::filesystem::path& path, cudaStream_t stream = 0, const std::string& volumeUuid = "") -> void;
+		auto addNanoVdb(const std::filesystem::path& path, cudaStream_t stream = nullptr, const std::string& volumeUuid = "") -> void;
 		auto addNanoVdb(const NanoVdbVolume& volume, const VolumeStatistics& statistics) -> void;
 
 
-		[[nodiscard]] auto getValideVolumeIndicies() -> std::vector<size_t>;
-		[[nodiscard]] auto getStatistics(std::size_t index) const -> const VolumeStatistics& {return volumeStatistics_[index];} 
+		[[nodiscard]] auto getValidVolumeIndices() -> std::vector<size_t>;
+		[[nodiscard]] auto getStatistics(const std::size_t index) const -> const VolumeStatistics& {return volumeStatistics_[index];} 
 
 		RuntimeDataSet(RuntimeDataSet&) = delete;
 		RuntimeDataSet(RuntimeDataSet&&) = default;

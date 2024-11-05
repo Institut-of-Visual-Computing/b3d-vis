@@ -26,15 +26,16 @@
         "tools"
       ]
     },
-    {
-      "name": "imgui",
-      "default-features": false,
-      "features": [
-        "opengl3-binding",
-        "glfw-binding",
-        "docking-experimental"
-      ]
-    },
+	{
+		"name": "imgui",
+		"default-features": false,
+		"features": [
+			"opengl3-binding",
+			"glfw-binding",
+			"docking-experimental"
+		]
+	},
+	"implot",
     "tbb",
     "opengl",
     {

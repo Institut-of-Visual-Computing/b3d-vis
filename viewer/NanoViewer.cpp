@@ -9,6 +9,9 @@
 
 #include <imgui_impl_glfw.h>
 #include <imgui_impl_opengl3.h>
+
+#include <implot.h>
+
 #include <Logging.h>
 
 #include <format>
@@ -90,6 +93,7 @@ namespace
 	{
 		IMGUI_CHECKVERSION();
 		ImGui::CreateContext();
+		ImPlot::CreateContext();
 		ImGui::GetIO().ConfigFlags |= ImGuiConfigFlags_DockingEnable;
 		ImGui::GetIO().ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;
 		ImGuizmo::AllowAxisFlip(false);
@@ -111,6 +115,7 @@ namespace
 	{
 		ImGui_ImplOpenGL3_Shutdown();
 		ImGui_ImplGlfw_Shutdown();
+		ImPlot::DestroyContext();
 		ImGui::DestroyContext();
 	}
 
@@ -120,7 +125,7 @@ namespace
 auto NanoViewer::gui() -> void
 {
 	/*ImGui::ShowDemoWindow(&showImGuiDemo);*/
-
+	
 	currentRenderer_->gui();
 	static auto showViewerSettings = true;
 	ImGui::Begin("Viewer Settings", &showViewerSettings, ImGuiWindowFlags_AlwaysAutoResize);

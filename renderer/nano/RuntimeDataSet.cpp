@@ -118,9 +118,9 @@ namespace
 
 		auto perWorkerStatistics = std::vector<VolumeStatistics>();
 		perWorkerStatistics.resize(workers);
-		auto workerIndicies = std::vector<int>{};
-		workerIndicies.resize(workers);
-		std::iota(workerIndicies.begin(), workerIndicies.end(), 0);
+		auto workerIndices = std::vector<int>{};
+		workerIndices.resize(workers);
+		std::iota(workerIndices.begin(), workerIndices.end(), 0);
 
 		const auto gridHandle = gridVolume.grid<float>();
 		const auto indexBox = gridHandle->indexBBox();
@@ -137,7 +137,7 @@ namespace
 		auto perWorkerVoxels = (int)(std::ceilf((float)volume / workers));
 
 
-		/*std::for_each(std::execution::par, workerIndicies.begin(), workerIndicies.end(),
+		/*std::for_each(std::execution::par, workerIndices.begin(), workerIndices.end(),
 					  [&](int worker)
 					  {
 						  auto ac = gridHandle->getAccessor();
@@ -226,13 +226,13 @@ namespace
 
 		auto totalStatistics = VolumeStatistics{};
 
-		for (auto& stat : perWorkerStatistics)
+		for (auto& [histogram, totalValues, min, max, average, median] : perWorkerStatistics)
 		{
-			totalStatistics.average += stat.average;
-			totalStatistics.min = std::min(totalStatistics.min, stat.min);
-			totalStatistics.max = std::max(totalStatistics.max, stat.max);
-			totalStatistics.histogram.insert(stat.histogram.begin(), stat.histogram.end());
-			totalStatistics.totalValues += stat.totalValues;
+			totalStatistics.average += average;
+			totalStatistics.min = std::min(totalStatistics.min, min);
+			totalStatistics.max = std::max(totalStatistics.max, max);
+			totalStatistics.histogram.insert(histogram.begin(), histogram.end());
+			totalStatistics.totalValues += totalValues;
 		}
 
 		auto halfValue = totalStatistics.totalValues / 2;
@@ -372,18 +372,18 @@ RuntimeDataSet::~RuntimeDataSet()
 	}
 }
 
-auto RuntimeDataSet::getValideVolumeIndicies() -> std::vector<size_t>
+auto RuntimeDataSet::getValidVolumeIndices() -> std::vector<size_t>
 {
 	const std::lock_guard listGuard(listMutex_);
-	auto indicies = std::vector<size_t>{};
+	auto indices = std::vector<size_t>{};
 
 	for (auto i = 0u; i < runtimeVolumes_.size(); i++)
 	{
 		const auto& runtimeVolume = runtimeVolumes_[i];
 		if (runtimeVolume.state == RuntimeVolumeState::ready)
 		{
-			indicies.push_back(i);
+			indices.push_back(i);
 		}
 	}
-	return indicies;
+	return indices;
 }
