@@ -287,7 +287,7 @@ namespace b3d::tools::sofia
 			return params_.end();
 		}
 
-		private:
+		public:
 			std::map<std::string, std::string> params_{};
 
 		#ifdef B3D_USE_NLOHMANN_JSON

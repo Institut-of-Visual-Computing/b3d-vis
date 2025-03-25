@@ -18,16 +18,16 @@ public:
 		return position_;
 	}
 
-	[[nodiscard]] inline auto getAt() const -> glm::vec3
+	[[nodiscard]] auto getAt() const -> glm::vec3
 	{
 		return position_ + forward_;
 	}
-	[[nodiscard]] static auto getUp() -> glm::vec3
+	[[nodiscard]] auto getUp() const -> glm::vec3
 	{
-		return glm::vec3{0.0f,1.0f,0.0f};;
+		return up_;
 	};
 
-	inline auto setOrientation(const glm::vec3& origin, const glm::vec3& interest, const glm::vec3& up,
+	auto setOrientation(const glm::vec3& origin, const glm::vec3& interest, const glm::vec3& up,
 							   const float fovYInDegrees) -> void
 	{
 		fovYInDegrees_ = fovYInDegrees;
