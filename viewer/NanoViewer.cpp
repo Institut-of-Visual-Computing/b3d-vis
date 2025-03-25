@@ -651,7 +651,7 @@ auto NanoViewer::showAndRunWithGui(const std::function<bool()>& keepgoing) -> vo
 					}
 					ImGui::TreePop();
 
-					/*
+					
 					if (ImGui::TreeNode("Server Requests"))
 					{
 						for (const auto& [progress, label, status] : actualRequests)
@@ -662,7 +662,7 @@ auto NanoViewer::showAndRunWithGui(const std::function<bool()>& keepgoing) -> vo
 						}
 						ImGui::TreePop();
 					}
-					*/
+					
 					ImGui::EndTooltip();
 				}
 			}

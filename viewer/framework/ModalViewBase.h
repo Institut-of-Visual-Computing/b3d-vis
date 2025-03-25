@@ -4,7 +4,7 @@
 
 #include <functional>
 #include <string>
-#include <SofiaParams.h>
+#include <string_view>
 
 enum class ModalType
 {
@@ -66,5 +66,4 @@ private:
 
 	std::string id_{};
 	ImVec2 minSize_{ 0, 0 };
-	SofiaParams sofiaParams_;
 };

@@ -10,7 +10,7 @@ set(viewerTargetName NanoViewer)
 add_executable(${viewerTargetName})
 
 IF (WIN32)
-	target_sources(${viewerTargetName} PRIVATE App.rc)
+	target_sources(${viewerTargetName} PRIVATE App.rc "StaticColors.h")
 ENDIF()
 
 target_sources(${viewerTargetName} PRIVATE
@@ -99,7 +99,7 @@ target_sources(${viewerTargetName} PRIVATE
 	features/sofiaSearch/SoFiaSearchView.h
 	features/sofiaSearch/SoFiaSearchView.cpp
 	features/sofiaSearch/ParamsSerializer.h
-)
+ "StaticColors.h")
 
 target_include_directories(${viewerTargetName} PUBLIC /)
 target_compile_features(${viewerTargetName} PUBLIC cxx_std_23)
