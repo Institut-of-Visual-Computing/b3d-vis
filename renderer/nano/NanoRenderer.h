@@ -1,8 +1,8 @@
 #pragma once
 #include <RendererBase.h>
 
-#include "nanovdb/util/CreateNanoGrid.h"
-#include "owl/owl_host.h"
+#include <nanovdb/tools/CreateNanoGrid.h>
+#include <owl/owl_host.h>
 
 #include <CudaGpuTimers.h>
 #include "SharedRenderingStructs.h"
@@ -14,7 +14,7 @@
 #include "features/RenderSyncFeature.h"
 #include "features/RenderTargetFeature.h"
 #include "features/TransferFunctionFeature.h"
-#include "..//nanoOutOfCore/Old_OpenFileDialog.h"
+#include "Old_OpenFileDialog.h"
 #include "features/SoFiASubregionFeature.h"
 
 
